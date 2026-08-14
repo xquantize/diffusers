@@ -885,16 +885,23 @@ class InpaintProcessor(ConfigMixin):
         height: int | None = None,
         width: int | None = None,
         padding_mask_crop: int | None = None,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor | None, dict]:
         """
         Preprocess the image and mask.
         """
         if mask is None and padding_mask_crop is not None:
             raise ValueError("mask must be provided if padding_mask_crop is provided")
 
-        # if mask is None, same behavior as regular image processor
+        # if mask is None, same behavior as regular image processor, but still
+        # return the 3-tuple contract so callers can unpack consistently
         if mask is None:
-            return self._image_processor.preprocess(image, height=height, width=width)
+            processed_image = self._image_processor.preprocess(image, height=height, width=width)
+            postprocessing_kwargs = {
+                "crops_coords": None,
+                "original_image": None,
+                "original_mask": None,
+            }
+            return processed_image, None, postprocessing_kwargs
 
         if padding_mask_crop is not None:
             crops_coords = self._image_processor.get_crop_region(mask, width, height, pad=padding_mask_crop)

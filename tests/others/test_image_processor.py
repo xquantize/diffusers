@@ -17,7 +17,7 @@ import numpy as np
 import PIL.Image
 import torch
 
-from diffusers.image_processor import VaeImageProcessor
+from diffusers.image_processor import InpaintProcessor, VaeImageProcessor
 
 
 class TestImageProcessor:
@@ -306,3 +306,16 @@ class TestImageProcessor:
         assert out_np.shape == exp_np_shape, (
             f"resized image output shape '{out_np.shape}' didn't match expected shape '{exp_np_shape}'."
         )
+
+    def test_inpaint_processor_preprocess_returns_three_values_without_mask(self):
+        image = PIL.Image.fromarray(np.zeros((64, 64, 3), dtype=np.uint8))
+        processor = InpaintProcessor()
+
+        processed_image, processed_mask, postprocessing_kwargs = processor.preprocess(image, mask=None)
+        assert processed_mask is None
+        assert isinstance(postprocessing_kwargs, dict)
+
+        mask = PIL.Image.fromarray(np.zeros((64, 64), dtype=np.uint8))
+        _, mask_out, kwargs_out = processor.preprocess(image, mask=mask)
+        assert mask_out is not None
+        assert isinstance(kwargs_out, dict)
